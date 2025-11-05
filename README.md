@@ -15,7 +15,7 @@ This project uses a workspace setup with vendored Docling and a specific `datatr
 pip install uv
 uv venv -p 3.12
 source .venv/bin/activate
-uv sync
+uv sync --no-build-isolation-package flash-attn
 ```
 
 Requirements are in `pyproject.toml` (notable: `torch==2.6.0`, `vllm>=0.8.5.post1`, `pymupdf==1.26.1`). A GPU is needed for vLLM steps.
