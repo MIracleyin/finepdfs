@@ -4,7 +4,7 @@
 
 This repository accompanies the FinePDFs dataset release and contains the end‑to‑end code to filter, extract, OCR, postprocess, deduplicate, classify, and package large‑scale PDF text data.
 
-- Dataset card: [HuggingFaceFW/finepdfs](https://huggingface.co/datasets/HuggingFaceFW/finepdfs)
+Dataset card: [HuggingFaceFW/finepdfs](https://huggingface.co/datasets/HuggingFaceFW/finepdfs)
 
 
 ### Installation
@@ -18,10 +18,10 @@ source .venv/bin/activate
 uv sync
 ```
 
-Requirements are in [pyproject.toml](./pyproject.toml) (notable: `torch==2.6.0`, `vllm>=0.8.5.post1`, `pymupdf==1.26.1`). A GPU is needed for vLLM steps.
+Requirements are in `pyproject.toml` (notable: `torch==2.6.0`, `vllm>=0.8.5.post1`, `pymupdf==1.26.1`). A GPU is needed for vLLM steps.
 
 ### Quickstart
-All steps are orchestrated by [run_finepdfs_pipeline.py](./run_finepdfs_pipeline.py).
+All steps are orchestrated by the [pipeline script](./run_finepdfs_pipeline.py).
 
 Example run:
 
@@ -36,7 +36,7 @@ Notes:
 - In the production pipeline we used LMDeploy instead of vLLM. As we decided not to support LMDeploy here, we use vLLM. For production use cases we recommend LMDeploy, as we found it to be the fastest of the sglang, vLLM, LMDeploy trio.
 
 ### OCR vs no‑OCR classifier
-The trained OCR routing classifier is in [models/xgb_ocr_classifier/](./models/xgb_ocr_classifier/). Training code and features are in [models/model_prep_code/ocr_xgb_classifier_train/train_xgb_classifier.ipynb](./models/model_prep_code/ocr_xgb_classifier_train/train_xgb_classifier.ipynb). The manually annotated training dataset is released at `HuggingFaceFW/ocr-annotations`.
+The trained OCR routing classifier is in the `models/xgb_ocr_classifier/` directory. Training code and features are in the [training notebook](./models/model_prep_code/ocr_xgb_classifier_train/train_xgb_classifier.ipynb). The manually annotated training dataset is released at `HuggingFaceFW/ocr-annotations`.
 
 ### OpenVINO‑quantized Docling layout model
 We provide the code used to quantize/convert `ds4sd/docling-layout-heron` to INT8 with OpenVINO. We only provide code for quantization, not conversion (which is straightforward to reproduce). We do not provide the source PDFs/images used, so consider this a reference implementation rather than fully runnable code. Evaluation code is provided in a similar form.
@@ -51,7 +51,7 @@ Gemma‑labeled dataset: `HuggingFaceFW/finepdfs_lang_classification`
 ```
 python thresholds/find_th.py --min-recall=0.1 --min-precision=0.9 --min-score=0.1 --workers=11 --th_file=th_values.json
 ```
-To run Gemma classification, see [thresholds/gemma_classify.py](./thresholds/gemma_classify.py).
+Use the [Gemma classification script](./thresholds/gemma_classify.py) to run classification.
 
 ### Quality classifier training
 We evaluated the following filters/classifiers:
@@ -65,8 +65,8 @@ Prompts are in the labeling code. We found only `edu` and `dclm` to yield meanin
 For labeling we used `Qwen3-235B-A22B-Instruct-2507`, which most closely matched Claude Sonnet 3.7 among open‑source LLMs.
 
 Code:
-- [classification/label_data_with_teacher.py](./classification/label_data_with_teacher.py) (labeling)
-- [classification/train_classifier.sh](./classification/train_classifier.sh) (training)
+- [Labeling script](./classification/label_data_with_teacher.py) for data labeling
+- [Training script](./classification/train_classifier.sh) for classifier training
 
 Datasets/models:
 - `HuggingFaceFW/finepdfs_fw_edu_labeled` (edu labeling for all languages)
@@ -78,22 +78,22 @@ Datasets/models:
 ### Repository structure (where things live)
 
 - Pipeline orchestration
-  - [run_finepdfs_pipeline.py](./run_finepdfs_pipeline.py): full end‑to‑end driver with functions per step (filter, dedup, extraction, postprocess, exact dedup, model classification, minhash, push).
-  - [pipeline_utils](./pipeline_utils/): pipeline‑related utilities
+  - [Main pipeline script](./run_finepdfs_pipeline.py): full end‑to‑end driver with functions per step (filter, dedup, extraction, postprocess, exact dedup, model classification, minhash, push).
+  - [Pipeline utilities](./pipeline_utils/): pipeline‑related utilities
 - Building blocks and utilities
-  - [blocks/extractors/docling.py](./blocks/extractors/docling.py): `DoclingExtractor` for embedded‑text extraction via Docling.
-  - [blocks/predictor/ocr_predictor.py](./blocks/predictor/ocr_predictor.py): scanned‑PDF predictor (XGBoost) to route OCR vs. non‑OCR.
-  - [blocks/classification](./blocks/classification/): fast multi‑headed inference for distilled edu models.
+  - [Docling extractor](./blocks/extractors/docling.py): `DoclingExtractor` for embedded‑text extraction via Docling.
+  - [OCR predictor](./blocks/predictor/ocr_predictor.py): scanned‑PDF predictor (XGBoost) to route OCR vs. non‑OCR.
+  - [Classification blocks](./blocks/classification/): fast multi‑headed inference for distilled edu models.
 - Vendored Docling code (exact versions used), modified for better performance/extraction clarity.
-  - [docling_code/docling/](./docling_code/docling/), [docling_code/docling-core/](./docling_code/docling-core/), [docling_code/docling-ibm-models/](./docling_code/docling-ibm-models/) (each has its own README and LICENSE).
+  - [Docling](./docling_code/docling/), [Docling Core](./docling_code/docling-core/), [Docling IBM Models](./docling_code/docling-ibm-models/) (each has its own README and LICENSE).
 
 - Models and training assets
-  - XGBoost OCR classifier weights: [models/xgb_ocr_classifier/](./models/xgb_ocr_classifier/) (trained with [models/model_prep_code/ocr_xgb_classifier_train](./models/model_prep_code/ocr_xgb_classifier_train/), used by [blocks/predictor/ocr_predictor.py](./blocks/predictor/ocr_predictor.py)).
-  - OpenVINO quantized docling layout model: [models/heron/](./models/heron/) (quantized with [models/model_prep_code/docling_quant/](./models/model_prep_code/docling_quant/)).
-  - Model based filtering training code (Edu/Dclm): [classification](./classification/) (`classification/train_classifier` for training, [classification/label_data_with_teacher.py](./classification/label_data_with_teacher.py) for labeling)
+  - XGBoost OCR classifier [weights](./models/xgb_ocr_classifier/) (trained with [training code](./models/model_prep_code/ocr_xgb_classifier_train/), used by the [OCR predictor](./blocks/predictor/ocr_predictor.py)).
+  - OpenVINO quantized [Docling layout model](./models/heron/) (quantized with [quantization code](./models/model_prep_code/docling_quant/)).
+  - Model based filtering training code (Edu/Dclm): [classification directory](./classification/) (`classification/train_classifier` for training, [labeling script](./classification/label_data_with_teacher.py) for labeling).
 
 - Language filtering
-  - Threshold discovery: [thresholds/](./thresholds/)
+  - [Threshold discovery code](./thresholds/)
 
 ### Limitations (high‑level)
 
@@ -106,7 +106,7 @@ For context and trade‑offs, see the dataset card: [HuggingFaceFW/finepdfs](htt
 
 ### License
 - Dataset: ODC‑By 1.0; subject also to CommonCrawl terms.
-- Code: Top‑level code in this repository is licensed under AGPL‑3.0. Vendored components under `docling_code/*` retain their original licenses (Docling and Docling‑Core under MIT; Docling‑IBM‑Models per upstream). The evaluation tooling under [models/model_prep_code/docling_quant/docling_eval](./models/model_prep_code/docling_quant/docling_eval) is licensed under MIT (same as Docling). PyMuPDF is used for rendering and is AGPL‑3.0. See [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) for details.
+- Code: Top‑level code in this repository is licensed under AGPL‑3.0. Vendored components under `docling_code/*` retain their original licenses (Docling and Docling‑Core under MIT; Docling‑IBM‑Models per upstream). The [evaluation tooling](./models/model_prep_code/docling_quant/docling_eval) is licensed under MIT (same as Docling). PyMuPDF is used for rendering and is AGPL‑3.0. See [third party notices](./THIRD_PARTY_NOTICES.md) for details.
 
 ### Citation
 
